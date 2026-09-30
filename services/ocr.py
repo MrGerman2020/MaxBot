@@ -1,13 +1,34 @@
 import pytesseract
 from PIL import Image
 import io
+import os
 import re
 import logging
+import shutil
 
-# ✅ Указываем путь к tesseract.exe явно
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+from config import TESSERACT_CMD
 
 logger = logging.getLogger(__name__)
+
+# Где искать tesseract. Раньше путь был жёстко зашит под Windows, из-за чего
+# OCR не работал ни в Linux-контейнере, ни при установке в другое место.
+# Теперь ищем по порядку: явная переменная → PATH → стандартная папка Windows.
+_WINDOWS_FALLBACK = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
+if TESSERACT_CMD:
+    pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
+elif shutil.which("tesseract") is None and os.path.exists(_WINDOWS_FALLBACK):
+    # Типичная установка на Windows: исполняемый файл есть, но его папки
+    # нет в PATH. Без этого молча отключался бы весь разбор фото.
+    pytesseract.pytesseract.tesseract_cmd = _WINDOWS_FALLBACK
+elif shutil.which("tesseract") is None:
+    # Не прерываем импорт: OCR вернёт пустой текст и напишет об ошибке
+    # при попытке распознавания, а не уронит бота на старте.
+    logger.warning(
+        "Tesseract не найден ни в PATH, ни в %s. "
+        "Установите его или задайте TESSERACT_CMD — распознавание фото "
+        "не будет работать.", _WINDOWS_FALLBACK
+    )
 
 
 async def extract_text_from_image(file_bytes: bytes) -> str:

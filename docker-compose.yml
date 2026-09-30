@@ -1,0 +1,39 @@
+# Локальный запуск чат-бота ЖКХ в MAX.
+#
+# Одна команда на запуск всех локальных компонентов решения:
+#
+#     docker compose up -d --build
+#
+# Локальный компонент один — сам бот. База данных не отдельный сервис,
+# а файл SQLite, который примонтирован из ./data, чтобы его можно было
+# открыть обычным просмотрщиком sqlite3.
+
+services:
+  bot:
+    build: .
+    image: max-zhkh-bot:local
+    container_name: max-zhkh-bot
+    restart: unless-stopped
+
+    # Секреты не запекаются в образ: .env читается только при запуске.
+    env_file:
+      - .env
+
+    environment:
+      # Куда писать базу внутри контейнера (совпадает с bind-mount).
+      DB_PATH: /app/data/zhkh.db
+      TESSERACT_CMD: /usr/bin/tesseract
+      TZ: Europe/Moscow
+
+    volumes:
+      # Хост ./data  ->  контейнер /app/data
+      # Минус на Windows и macOS: путь берётся относительно compose-файла.
+      - ./data:/app/data
+
+    # Бот не слушает портов, поэтому блока ports нет — только выход наружу.
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

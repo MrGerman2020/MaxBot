@@ -4,7 +4,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 MAX_BOT_TOKEN = os.getenv("MAX_BOT_TOKEN")
-DB_PATH = "zhkh.db"
+
+# Путь к файлу базы. По умолчанию — рядом с bot.py, чтобы обычный запуск
+# через venv продолжал работать без настроек. В Docker путь задаётся через
+# переменную окружения, чтобы база лежала на примонтированном томе.
+DB_PATH = os.getenv("DB_PATH", "zhkh.db")
+
+# Исполняемый файл Tesseract. Пусто — искать в PATH. Нужен, если OCR
+# установлен нестандартно (в Windows по умолчанию путь не в PATH).
+TESSERACT_CMD = os.getenv("TESSERACT_CMD", "")
 
 # РИАС ЖКХ. Оставлено для чтения реестров (договоры, лицевые счета, ОЖФ).
 # ВАЖНО: /appeals в этом API — импорт обращений, уже полученных организацией.
